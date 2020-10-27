@@ -1,63 +1,62 @@
+Api URL:
+http://localhost:8000/MavenApp/api/student
 
-curl --location --request GET 'http://localhost:8081/MavenApp-0.0.1-SNAPSHOT/api/student/11'
+Data for Post URL:
+"rollNo": 11, "name":"Arun Gupta1", "totalMarks":5671}
+--------------------------------------------------------------------------------------
+Set Java Path for ../Tomcat8.5/bin...cmd
 
-curl --location --request POST 'http://localhost:8081/MavenApp-0.0.1-SNAPSHOT/api/student' \
---header 'Content-Type: application/json' \
---data-raw '{​​​​​​​​"rollNo": 11, "name":"Arun Gupta1", "totalMarks":5671}​​​​​​​​'
+set JAVA_HOME=C:\Program Files\Java\jdk1.8.0_181
+set PATH=%JAVA_HOME%\bin;%PATH%
 
----------------------------
-pipeline {
-    agent any    
+--------------------------------------------------------------------------------------
+Data for tomcat-users.xml:
 
-    stages {
-        stage('Env Setup') {
-            steps {
-                echo "PATH is: $PATH"
-            }
-        }
-    
-    stage('Checkout') {
-            steps {
-                git url: 'https://github.com/koddas/war-web-project.git'
-            }
-        }
+<tomcat-users>
+<role rolename="manager-gui"/>
+<role rolename="manager-script"/>
+<role rolename="manager-jmx"/>
+<role rolename="manager-status"/>
+<role rolename="admin-gui"/>
+<role rolename="admin-script"/>
+
+<user username="root" password="root" roles="manager-gui,manager-script,manager-jmx,manager-status,admin-gui,admin-script"/>
+
+</tomcat-users>
+--------------------------------------------------------------------------------------
+
+Pipeline script:
+
+pipeline{
+    agent any
+    tools{
+        maven 'M2_HOME'
+        jdk 'JDK1.8'
+    }
+stages{
+    stage("Clone Code"){
+    steps{
+       git "https://github.com/devopstraininglab/SpringBootCurdRestFull.git"
+    }
         
-        stage('Install') 
-        {
-            steps {
-                bat 'mvn clean install'
-            }
-        }
+    }
+        stage("Build"){
+    steps{
+         bat "mvn clean install"
+    }
+        
+    }
+    stage("Test") {
+        steps{
+      junit "**/target/surefire-reports/TEST-*.xml"
+   }
+}
+        stage("Deploy"){
+    steps{
+      deploy adapters: [tomcat8(credentialsId: '029802ba-e8af-4e7e-93e0-4a950ca6eea8', path: '', url: 'http://localhost:8000/')], contextPath: 'MavenApp', war: '**/*.war'
+    }
+        
     }
 }
-
-
-
- <proxies>
-    <proxy>
-      <active>true</active>
-      <protocol>http</protocol>
-      <host>http://proxy</host>
-      <port>8080</port>
-      <nonProxyHosts>maven</nonProxyHosts>
-    </proxy>
-  </proxies>
-
-
-<mirror>
-  <id>central-secure</id>
-  <url>https://repo.maven.apache.org/maven2</url>
-  <mirrorOf>central</mirrorOf>
-</mirror>
-
-
-
-<mirror>
-<id>Repository</id>
-<name>Maven Repository</name>
-<url>https://repo.maven.apache.org/maven2</url>
-<mirrorOf>central</mirrorOf>
-</mirror>
-
-
-https://devopsntt.atlassian.net/jira/software/projects/DEP/boards/1
+}
+-----------------------------------------------------------------------------------------------
